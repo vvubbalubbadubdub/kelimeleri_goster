@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelimeleri Göster</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            background-color: #f0f0f0; /* Buraya istediğiniz rengi girin */
+        }
+        #display {
+            font-size: 4em; /* Font boyutu */
+            margin-top: 20px;
+            color: #333; /* Font rengi */
+            text-align: center; /* Metnin yatayda hizalanması */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Courier New', Courier, monospace; /* Font tipi */
+        }
+        #sidePanel {
+            position: fixed;
+            right: -300px;
+            top: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #f1f1f1;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+            transition: 0.3s;
+            padding: 20px;
+        }
+        #sidePanel.open {
+            right: 0;
+        }
+        #toggleButton {
+            position: fixed;
+            right: 0;
+            top: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            z-index: 1;
+        }
+        #timeInput {
+            width: 100%;
+            padding: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <button id="toggleButton" onclick="togglePanel()">Metin Girişi</button>
+    <div id="sidePanel">
+        <textarea id="inputText" rows="10" cols="30" placeholder="Metni buraya gir..."></textarea>
+        <br>
+        <label for="timeInput">Gösterim Süresi (milisaniye):</label>
+        <input type="number" id="timeInput" placeholder="1000">
+        <button onclick="applyTime()">Süreyi Uygula</button>
+        <br>
+        <button onclick="showWords()">Göster</button>
+        <button onclick="clearText()">Metni Temizle</button>
+        <button onclick="stopShowing()">Durdur</button>
+        <button onclick="continueShowing()">Devam Et</button>
+        <br>
+        <label for="indexInput">Sıradaki Kelime (0 ile başlayarak):</label>
+        <input type="number" id="indexInput" placeholder="0">
+        <button onclick="setIndex()">Ayarlamayı Uygula</button>
+        <br>
+        <div id="progress">İlerleme: 0/0</div>
+    </div>
+    <div id="display"></div>
+
+    <script>
+        let timer; // Timer değişkenini global olarak tanımla
+        let words = [];
+        let index = 0;
+        let displayTime = 1000; // Default 1000 milisaniye
+        let isStopped = false; // Gösterimin durdurulup durdurulmadığını takip eder
+        let isRunning = false; // Gösterimin zaten çalışıp çalışmadığını takip eder
+
+        function togglePanel() {
+            const panel = document.getElementById('sidePanel');
+            panel.classList.toggle('open');
+        }
+
+        function applyTime() {
+            displayTime = parseInt(document.getElementById('timeInput').value) || 1000; // Yeni süreyi uygula
+        }
+
+        function showWords() {
+            clearTimeout(timer); // Önceki zamanlayıcıyı temizle
+            const inputText = document.getElementById('inputText').value;
+            words = inputText.match(/[^.\s]+[.]?|[.]/g) || []; // Boşluk ve nokta ile böl
+            index = 0;
+            isStopped = false; // Gösterim başladığında durdurulmadığını belirtir
+            isRunning = true; // Gösterim başladığını belirtir
+            updateProgress();
+            displayNextWord();
+        }
+
+        function displayNextWord() {
+            const display = document.getElementById('display');
+            if (index < words.length) {
+                display.textContent = words[index];
+                index++;
+                updateProgress();
+                if (!isStopped) {
+                    timer = setTimeout(displayNextWord, displayTime);
+                } else {
+                    isRunning = false; // Gösterim durduğunu belirtir
+                }
+            } else {
+                display.textContent = "Bitti!";
+                updateProgress();
+                isRunning = false; // Gösterim bittiğini belirtir
+            }
+        }
+
+        function updateProgress() {
+            const progress = document.getElementById('progress');
+            progress.textContent = `İlerleme: ${index}/${words.length}`;
+        }
+
+        function clearText() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('display').textContent = '';
+            clearTimeout(timer); // Timer'ı temizle
+            index = 0;
+            words = [];
+            isStopped = false;
+            isRunning = false;
+            updateProgress();
+        }
+
+        function stopShowing() {
+            clearTimeout(timer); // Timer'ı temizle
+            isStopped = true; // Gösterimin durdurulduğunu belirtir
+            isRunning = false; // Gösterimin durduğunu belirtir
+        }
+
+        function continueShowing() {
+            if (!isRunning) { // Gösterim zaten çalışmıyorsa devam et
+                isStopped = false; // Gösterimin devam ettiğini belirtir
+                isRunning = true; // Gösterimin çalıştığını belirtir
+                displayNextWord(); // Gösterime kaldığı yerden devam et
+            }
+        }
+
+        function setIndex() {
+            const indexInput = parseInt(document.getElementById('indexInput').value);
+            if (!isNaN(indexInput) && indexInput >= 0 && indexInput < words.length) {
+                index = indexInput;
+                updateProgress();
+                displaySelectedWord(); // Ayarlamayı uyguladıktan sonra seçili kelimeyi göster
+            } else {
+                alert("Geçerli bir indeks giriniz.");
+            }
+        }
+
+        function displaySelectedWord() {
+            const display = document.getElementById('display');
+            if (index < words.length) {
+                display.textContent = words[index];
+            }
+        }
+    </script>
+</body>
+</html>
